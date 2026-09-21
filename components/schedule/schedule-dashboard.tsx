@@ -13,9 +13,15 @@ import type { ScheduleData } from "@/lib/types"
 
 type ScheduleDashboardProps = {
   data: ScheduleData
+  onRefresh?: () => void
+  refreshing?: boolean
 }
 
-export function ScheduleDashboard({ data }: ScheduleDashboardProps) {
+export function ScheduleDashboard({
+  data,
+  onRefresh,
+  refreshing = false,
+}: ScheduleDashboardProps) {
   const [category, setCategory] = useState("all")
   const [status, setStatus] = useState("all")
   const categories = useMemo(
@@ -38,6 +44,8 @@ export function ScheduleDashboard({ data }: ScheduleDashboardProps) {
         items={data.items}
         fetchedAt={data.fetchedAt}
         sheetUrl={data.sheetUrl}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
       />
       <StatsCards items={filtered} />
       <ScheduleFilters

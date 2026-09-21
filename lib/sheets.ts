@@ -151,8 +151,11 @@ export function parseScheduleCsv(csv: string): ScheduleItem[] {
   return items
 }
 
-function extractTitle(csv: string) {
-  const rows = parseCsv(csv)
+export function extractTitle(csv: string) {
+  return extractTitleFromRows(parseCsv(csv))
+}
+
+function extractTitleFromRows(rows: string[][]) {
   for (const row of rows) {
     const value = row.find((cell) => cell.trim())
     if (value && !findColumnMap(row)) {

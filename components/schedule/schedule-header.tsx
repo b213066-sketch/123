@@ -1,12 +1,9 @@
 "use client"
 
 import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { refreshSchedule } from "@/lib/actions"
 import { formatFetchedAt, getWeekRangeLabel } from "@/lib/schedule"
 import type { ScheduleItem } from "@/lib/types"
 
@@ -15,6 +12,8 @@ type ScheduleHeaderProps = {
   items: ScheduleItem[]
   fetchedAt: string
   sheetUrl: string
+  onRefresh?: () => void
+  refreshing?: boolean
 }
 
 export function ScheduleHeader({
@@ -22,22 +21,9 @@ export function ScheduleHeader({
   items,
   fetchedAt,
   sheetUrl,
+  onRefresh,
+  refreshing = false,
 }: ScheduleHeaderProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-
-  function onRefresh() {
-    setError(null)
-    startTransition(async () => {
-      try {
-        await refreshSchedule()
-        router.refresh()
-      } catch {
-        setError("새로고침에 실패했습니다.")
-      }
-    })
-  }
 
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -53,16 +39,15 @@ export function ScheduleHeader({
           <span className="mx-2 text-border">|</span>
           마지막 동기화 {formatFetchedAt(fetchedAt)}
         </p>
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={onRefresh}
-          disabled={isPending}
+          disabled={!onRefresh || refreshing}
         >
-          <RefreshCwIcon className={isPending ? "animate-spin" : undefined} />
+          <RefreshCwIcon className={refreshing ? "animate-spin" : undefined} />
           새로고침
         </Button>
         <Button
