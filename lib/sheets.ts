@@ -152,7 +152,20 @@ export function parseScheduleCsv(csv: string): ScheduleItem[] {
 }
 
 export function extractTitle(csv: string) {
-  return extractTitleFromRows(parseCsv(csv))
+  const rows = parseCsv(csv)
+  const header = rows.find((row) => findColumnMap(row))
+  if (header) {
+    const dateIndex = findAliasIndex(
+      header.map((cell) => cell.trim().toLowerCase()),
+      HEADER_ALIASES.date
+    )
+    const prefix = header[dateIndex]?.trim().replace(/\s*날짜$/i, "").trim()
+    if (prefix) {
+      return prefix
+    }
+  }
+
+  return extractTitleFromRows(rows)
 }
 
 function extractTitleFromRows(rows: string[][]) {
@@ -187,8 +200,19 @@ function findColumnMap(row: string[]) {
 }
 
 function findAliasIndex(row: string[], aliases: readonly string[]) {
+  const exact = row.findIndex((cell) =>
+    aliases.some((alias) => cell.trim().toLowerCase() === alias.toLowerCase())
+  )
+  if (exact !== -1) {
+    return exact
+  }
+
   return row.findIndex((cell) =>
-    aliases.some((alias) => cell === alias.toLowerCase())
+    aliases.some((alias) => {
+      const value = cell.trim().toLowerCase()
+      const needle = alias.toLowerCase()
+      return value.endsWith(needle) || value.includes(needle)
+    })
   )
 }
 
