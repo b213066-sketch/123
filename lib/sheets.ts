@@ -26,34 +26,53 @@ export function getSheetUrl() {
   return `https://docs.google.com/spreadsheets/d/${getSheetId()}/edit?usp=sharing`
 }
 
-function getCsvUrl() {
-  return `https://docs.google.com/spreadsheets/d/${getSheetId()}/export?format=csv&gid=${getSheetGid()}`
+function getCsvUrls() {
+  const id = getSheetId()
+  const gid = getSheetGid()
+  return [
+    `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`,
+    `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`,
+  ]
+}
+
+function isCsv(text: string) {
+  const trimmed = text.trimStart()
+  return trimmed.length > 0 && !trimmed.startsWith("<")
+}
+
+async function fetchCsvText() {
+  const headers = {
+    Accept: "text/csv,text/plain;q=0.9,*/*;q=0.8",
+    "User-Agent":
+      "Mozilla/5.0 (compatible; ScheduleDashboard/1.0; +https://vercel.com)",
+  }
+
+  for (const url of getCsvUrls()) {
+    const response = await fetch(url, {
+      cache: "no-store",
+      redirect: "follow",
+      headers,
+    })
+    if (!response.ok) {
+      continue
+    }
+    const csv = await response.text()
+    if (isCsv(csv)) {
+      return csv
+    }
+  }
+
+  return null
 }
 
 export async function fetchSchedule(): Promise<ScheduleFetchResult> {
   try {
-    const response = await fetch(getCsvUrl(), {
-      cache: "force-cache",
-      next: { revalidate: 60, tags: ["schedule"] },
-      headers: {
-        Accept: "text/csv,text/plain;q=0.9,*/*;q=0.8",
-      },
-    })
-
-    if (!response.ok) {
+    const csv = await fetchCsvText()
+    if (!csv) {
       return {
         ok: false,
         error:
           "스프레드시트를 불러오지 못했습니다. 시트가 ‘링크가 있는 모든 사용자 보기’인지 확인해 주세요.",
-      }
-    }
-
-    const csv = await response.text()
-    if (!csv.trim() || csv.trimStart().startsWith("<")) {
-      return {
-        ok: false,
-        error:
-          "시트 응답이 CSV가 아닙니다. 공유 설정을 ‘링크가 있는 모든 사용자 보기’로 바꿔 주세요.",
       }
     }
 
